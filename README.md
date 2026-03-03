@@ -80,5 +80,6 @@ Each iteration is saved to history. Annotation patterns you repeat across sessio
 ## Acknowledgements
 
 - [cc-nano-banana](https://github.com/kkoppenhaver/cc-nano-banana) by [@kkoppenhaver](https://github.com/kkoppenhaver) — the Claude Code skill that powers the underlying image generation
+- [Claude Playground Plugin](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/playground) by Anthropic — used to scaffold and build the interactive refinement workspace (`nano-banana-playground.html`)
 - [Gemini CLI](https://github.com/google-gemini/gemini-cli) by Google
 - [nanobanana extension](https://github.com/gemini-cli-extensions/nanobanana) for the image generation commands

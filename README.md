@@ -77,9 +77,13 @@ Bake iteration ← Refined prompt auto-built ← Annotate with category + priori
 
 Each iteration is saved to history. Annotation patterns you repeat across sessions are tracked in skill memory and surfaced as suggestions — making your prompts more precise over time.
 
+## How This Was Built
+
+The interactive refinement workspace (`nano-banana-playground.html`) was scaffolded using the [Claude Playground Plugin](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/playground) by Anthropic — a Claude Code plugin that generates self-contained, single-file HTML playgrounds with live controls and prompt output. It provided the structural foundation and template system for building the annotation workspace, which was then extended with canvas-based image annotation, a local bridge server, and skill memory tracking.
+
 ## Acknowledgements
 
 - [cc-nano-banana](https://github.com/kkoppenhaver/cc-nano-banana) by [@kkoppenhaver](https://github.com/kkoppenhaver) — the Claude Code skill that powers the underlying image generation
-- [Claude Playground Plugin](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/playground) by Anthropic — used to scaffold and build the interactive refinement workspace (`nano-banana-playground.html`)
+- [Claude Playground Plugin](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/playground) by Anthropic — used to scaffold and build the interactive refinement workspace
 - [Gemini CLI](https://github.com/google-gemini/gemini-cli) by Google
 - [nanobanana extension](https://github.com/gemini-cli-extensions/nanobanana) for the image generation commands

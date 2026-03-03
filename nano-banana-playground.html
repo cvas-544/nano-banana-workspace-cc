@@ -634,6 +634,16 @@ body {
     <div class="server-dot"></div>
     <span id="serverStatus">Connecting…</span>
   </div>
+  <button id="serverToggleBtn" onclick="toggleServer()" style="
+    padding: 4px 11px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all .15s;
+  ">⏹ Stop Server</button>
   <div class="topbar-spacer"></div>
   <div class="presets">
     <button class="preset-btn" onclick="loadPreset('portrait')">Portrait</button>
@@ -857,13 +867,40 @@ function checkServer() {
 
 function setServerStatus(online) {
   state.serverOnline = online;
-  const badge = document.getElementById('serverBadge');
-  const label = document.getElementById('serverStatus');
-  const hint  = document.getElementById('serverHint');
+  const badge  = document.getElementById('serverBadge');
+  const label  = document.getElementById('serverStatus');
+  const hint   = document.getElementById('serverHint');
+  const btn    = document.getElementById('serverToggleBtn');
   badge.className = `server-badge ${online ? 'online' : 'offline'}`;
   label.textContent = online ? 'Server online' : 'Server offline';
   hint && (hint.style.display = online ? 'none' : 'block');
   document.getElementById('genBtn').disabled = !document.getElementById('promptInput').value.trim() || !online;
+  if (btn) {
+    btn.textContent = online ? '⏹ Stop Server' : '▶ Start Server';
+    btn.style.color = online ? '#ef4444' : 'var(--muted)';
+    btn.style.borderColor = online ? 'rgba(239,68,68,.4)' : 'var(--border)';
+  }
+}
+
+async function toggleServer() {
+  if (state.serverOnline) {
+    // Stop it
+    try {
+      await fetch(`${SERVER}/stop`, { method: 'POST' });
+    } catch {}
+    setServerStatus(false);
+  } else {
+    // Can't start from browser — copy command to clipboard
+    const cmd = 'node ~/nano-banana-server.js';
+    navigator.clipboard.writeText(cmd).then(() => {
+      const btn = document.getElementById('serverToggleBtn');
+      const prev = btn.textContent;
+      btn.textContent = 'Command copied!';
+      btn.style.color = 'var(--accent)';
+      btn.style.borderColor = 'rgba(240,192,64,.4)';
+      setTimeout(() => setServerStatus(false), 2000);
+    });
+  }
 }
 
 checkServer();

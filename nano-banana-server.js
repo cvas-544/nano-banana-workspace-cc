@@ -147,6 +147,14 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // Stop server
+  if (req.method === 'POST' && req.url === '/stop') {
+    send(res, 200, { stopped: true });
+    console.log('\n🍌 Server stopped via UI.');
+    setTimeout(() => process.exit(0), 200);
+    return;
+  }
+
   res.writeHead(404); res.end('Not found');
 });
 

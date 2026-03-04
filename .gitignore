@@ -1,0 +1,18 @@
+# Environment & secrets
+.env
+.env.*
+*.key
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log
+
+# Generated images (local output only)
+nanobanana-output/
+
+# Logs
+*.log
+/tmp/

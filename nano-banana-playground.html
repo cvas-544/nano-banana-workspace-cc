@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nano Banana · Integrated Refinement Workspace</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --surface3: #21262d;
+  --border: #30363d;
+  --border2: #21262d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #f0c040;
+  --online: #3fb950;
+  --offline: #f85149;
+  --c-composition: #a78bfa;
+  --c-lighting: #fbbf24;
+  --c-color: #60a5fa;
+  --c-detail: #34d399;
+  --c-mood: #f472b6;
+  --c-texture: #22d3ee;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ─────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 9px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-shrink: 0;
+}
+.topbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.topbar-sub {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.server-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.server-badge.online  { color: var(--online);  border-color: rgba(63,185,80,.35);  background: rgba(63,185,80,.08);  }
+.server-badge.offline { color: var(--offline); border-color: rgba(248,81,73,.35); background: rgba(248,81,73,.08); }
+.server-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.topbar-spacer { flex: 1; }
+.presets { display: flex; gap: 5px; }
+.preset-btn {
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all .15s;
+}
+.preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── WORKSPACE ──────────────────────────── */
+.workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── LEFT PANEL ─────────────────────────── */
+.left-panel {
+  width: 28%;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 9px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.version-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #000;
+  background: var(--accent);
+  padding: 2px 7px;
+  border-radius: 8px;
+}
+#promptInput {
+  flex: 1;
+  background: var(--bg);
+  color: var(--text);
+  border: none;
+  outline: none;
+  padding: 14px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  resize: none;
+  font-family: inherit;
+  min-height: 0;
+}
+#promptInput::placeholder { color: var(--muted); }
+.prompt-footer {
+  padding: 8px 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.char-count { font-size: 11px; color: var(--muted); font-family: monospace; }
+.gen-btn {
+  padding: 6px 16px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  transition: opacity .15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.gen-btn:hover { opacity: .85; }
+.gen-btn:disabled { opacity: .4; cursor: default; }
+.gen-btn .spinner {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(0,0,0,.3);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: none;
+}
+.gen-btn.loading .spinner { display: block; }
+.gen-btn.loading .btn-label { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── HISTORY ───────────────────────────── */
+.history-section {
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  max-height: 190px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface2);
+}
+.history-inner { overflow-y: auto; flex: 1; }
+.history-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.iter-item {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border2);
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  transition: background .1s;
+}
+.iter-item:hover { background: rgba(255,255,255,.03); }
+.iter-item.active { background: rgba(240,192,64,.06); border-left: 2px solid var(--accent); padding-left: 12px; }
+.iter-v { font-size: 10px; font-weight: 700; color: var(--accent); font-family: monospace; flex-shrink: 0; margin-top: 1px; }
+.iter-body { flex: 1; min-width: 0; }
+.iter-prompt { font-size: 11px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.iter-meta { font-size: 10px; color: var(--muted); margin-top: 2px; display: flex; gap: 5px; flex-wrap: wrap; }
+.iter-tag { padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; }
+
+/* ── CENTER PANEL ───────────────────────── */
+.center-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0a0e14;
+}
+.image-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  text-align: center;
+  padding: 32px;
+}
+.placeholder-icon { font-size: 48px; opacity: .4; }
+.placeholder-title { font-size: 14px; color: var(--text); opacity: .6; }
+.placeholder-sub { font-size: 12px; line-height: 1.6; opacity: .5; max-width: 240px; }
+.server-hint {
+  font-size: 11px;
+  font-family: monospace;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 4px;
+  color: var(--muted);
+}
+#generatedImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+#annotationCanvas {
+  position: absolute;
+  cursor: crosshair;
+  display: none;
+  z-index: 10;
+}
+
+/* Annotation popup — fixed so overflow:hidden on parent doesn't clip it */
+#annPopup {
+  position: fixed;
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  width: 240px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.7);
+  z-index: 1000;
+}
+#annPopup textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 6px 8px;
+  resize: none;
+  outline: none;
+  height: 60px;
+  line-height: 1.5;
+}
+#annPopup textarea:focus { border-color: var(--accent); }
+.popup-row { display: flex; gap: 6px; margin-top: 6px; }
+.popup-row select {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+  outline: none;
+}
+.popup-confirm {
+  padding: 4px 12px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+.popup-cancel {
+  padding: 4px 10px;
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.popup-cancel:hover { color: var(--text); }
+
+/* Loading overlay */
+#loadingOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 200;
+}
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(240,192,64,.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+.loading-label { color: var(--accent); font-size: 13px; font-weight: 600; }
+.loading-sub { color: var(--muted); font-size: 11px; }
+
+/* Image toolbar */
+.image-toolbar {
+  padding: 6px 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.tool-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all .12s;
+}
+.tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tool-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(240,192,64,.08); }
+.tool-sep { width: 1px; height: 16px; background: var(--border); }
+.bake-btn {
+  margin-left: auto;
+  padding: 5px 14px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all .15s;
+}
+.bake-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ann-count-badge {
+  font-size: 10px;
+  background: rgba(240,192,64,.15);
+  color: var(--accent);
+  border: 1px solid rgba(240,192,64,.3);
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* ── RIGHT PANEL ─────────────────────────── */
+.right-panel {
+  width: 28%;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* Add annotation form */
+.add-form {
+  padding: 10px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.add-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.add-row:last-child { margin-bottom: 0; }
+.add-row input[type="text"] {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+.add-row input:focus { border-color: var(--accent); }
+.add-row select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+  outline: none;
+}
+.add-ann-btn {
+  padding: 5px 12px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.add-ann-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Filter chips */
+.filter-bar {
+  padding: 7px 10px;
+  display: flex;
+  gap: 4px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.chip {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 10px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all .12s;
+}
+.chip.active { border-color: var(--accent); color: var(--accent); background: rgba(240,192,64,.08); }
+.chip:hover:not(.active) { color: var(--text); }
+
+/* Annotation list */
+.ann-list { flex: 1; overflow-y: auto; background: var(--bg); }
+.ann-inner { padding: 8px; }
+.no-ann {
+  padding: 24px 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.no-ann em { color: var(--text); font-style: normal; }
+.ann-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  transition: opacity .2s, border-color .15s;
+  cursor: default;
+}
+.ann-card:hover { border-color: rgba(240,192,64,.3); }
+.ann-card.excluded { opacity: .4; }
+.ann-card.highlighted { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent); }
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+}
+.ann-num {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #000;
+}
+.cat-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  flex-shrink: 0;
+}
+.type-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex-shrink: 0;
+  color: var(--muted);
+  border-color: var(--border);
+}
+.prio-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.prio-critical { background: rgba(239,68,68,.12); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+.prio-nice     { background: rgba(107,114,128,.12); color: #9ca3af; border: 1px solid rgba(107,114,128,.3); }
+.card-spacer { flex: 1; }
+.toggle-wrap { display: flex; align-items: center; cursor: pointer; padding: 2px; }
+.toggle-track { width: 26px; height: 13px; border-radius: 7px; background: var(--border); position: relative; transition: background .2s; }
+.toggle-track.on { background: var(--accent); }
+.toggle-thumb { width: 9px; height: 9px; border-radius: 50%; background: #fff; position: absolute; top: 2px; left: 2px; transition: left .2s; }
+.toggle-track.on .toggle-thumb { left: 15px; }
+.del-btn { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 3px; color: var(--muted); font-size: 12px; transition: all .12s; }
+.del-btn:hover { background: rgba(239,68,68,.12); color: #ef4444; }
+.card-text { padding: 0 9px 9px; font-size: 12px; line-height: 1.5; color: var(--text); }
+
+/* ── SKILL MEMORY ────────────────────────── */
+.memory-section {
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+  flex-shrink: 0;
+  max-height: 160px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.memory-inner { overflow-y: auto; flex: 1; padding: 6px 8px; }
+.memory-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 6px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .1s;
+  margin-bottom: 3px;
+}
+.memory-item:hover { background: rgba(255,255,255,.04); }
+.memory-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.memory-text { font-size: 11px; color: var(--text); flex: 1; line-height: 1.4; }
+.memory-count { font-size: 10px; color: var(--accent); font-weight: 700; flex-shrink: 0; font-family: monospace; }
+.no-memory { padding: 12px; text-align: center; color: var(--muted); font-size: 11px; }
+
+/* ── BOTTOM BAR ──────────────────────────── */
+.bottom-bar {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 10px 16px;
+  flex-shrink: 0;
+}
+.bottom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+.prompt-stats { font-size: 10px; color: var(--muted); }
+.prompt-stats b { color: var(--accent); }
+.bottom-row { display: flex; gap: 10px; align-items: flex-start; }
+#refinedPrompt {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 8px 11px;
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--text);
+  max-height: 80px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+.copy-btn {
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.copy-btn:hover { opacity: .85; }
+.refined-placeholder { color: var(--muted); font-style: italic; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-title">🍌 Nano Banana <span class="topbar-sub">Refinement Workspace</span></div>
+  <div id="serverBadge" class="server-badge offline">
+    <div class="server-dot"></div>
+    <span id="serverStatus">Connecting…</span>
+  </div>
+  <button id="serverToggleBtn" onclick="toggleServer()" style="
+    padding: 4px 11px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all .15s;
+  ">⏹ Stop Server</button>
+  <div class="topbar-spacer"></div>
+  <div class="presets">
+    <button class="preset-btn" onclick="loadPreset('portrait')">Portrait</button>
+    <button class="preset-btn" onclick="loadPreset('landscape')">Landscape</button>
+    <button class="preset-btn" onclick="loadPreset('product')">Product</button>
+    <button class="preset-btn" onclick="loadPreset('abstract')">Abstract</button>
+    <button class="preset-btn" onclick="clearAll()">Clear</button>
+  </div>
+</div>
+
+<!-- WORKSPACE -->
+<div class="workspace">
+
+  <!-- LEFT: Prompt + History -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <div class="panel-label">Prompt</div>
+      <div id="versionBadge" class="version-badge">v1</div>
+    </div>
+    <textarea id="promptInput" placeholder="Write your Nano Banana prompt here…&#10;&#10;Tip: be specific about style, mood, lighting, composition, colors." oninput="onPromptChange()"></textarea>
+    <div class="prompt-footer">
+      <div class="char-count" id="charCount">0 chars</div>
+      <button class="gen-btn" id="genBtn" onclick="generateImage()" disabled>
+        <div class="spinner"></div>
+        <span class="btn-label">▶ Generate</span>
+      </button>
+    </div>
+    <!-- History -->
+    <div class="history-section">
+      <div class="panel-header">
+        <div class="panel-label">Iteration History</div>
+      </div>
+      <div class="history-inner" id="historyList">
+        <div class="history-empty">No iterations yet. Generate → annotate → bake to track evolution.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Image + Canvas -->
+  <div class="center-panel">
+    <div class="image-wrap" id="imageWrap">
+
+      <!-- Placeholder -->
+      <div class="image-placeholder" id="placeholder">
+        <div class="placeholder-icon">🍌</div>
+        <div class="placeholder-title">Ready to generate</div>
+        <div class="placeholder-sub">Write a prompt on the left and click Generate. Your image will appear here.</div>
+        <div id="serverHint" class="server-hint" style="display:none">
+          Server offline → run: node ~/nano-banana-server.js
+        </div>
+      </div>
+
+      <!-- Generated image -->
+      <img id="generatedImage" alt="Generated" />
+
+      <!-- Annotation canvas (sits over image) -->
+      <canvas id="annotationCanvas"></canvas>
+
+      <!-- Annotation popup -->
+      <div id="annPopup">
+        <textarea id="popupText" placeholder="Describe the change, dos/don'ts…"></textarea>
+        <div class="popup-row">
+          <select id="popupCat">
+            <option value="composition">🔲 Composition</option>
+            <option value="lighting">💡 Lighting</option>
+            <option value="color">🎨 Color</option>
+            <option value="detail">🔍 Detail</option>
+            <option value="mood">🌡 Mood</option>
+            <option value="texture">🪨 Texture</option>
+          </select>
+          <select id="popupPrio">
+            <option value="critical">🔴 Critical</option>
+            <option value="nice">🔵 Nice</option>
+          </select>
+        </div>
+        <div class="popup-row" style="margin-top:6px; justify-content:flex-end">
+          <button class="popup-cancel" onclick="cancelAnnotation()">Cancel</button>
+          <button class="popup-confirm" onclick="confirmAnnotation()">Add ↵</button>
+        </div>
+      </div>
+
+      <!-- Loading overlay -->
+      <div id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-label">Generating…</div>
+        <div class="loading-sub">Nano Banana is working on it</div>
+      </div>
+    </div>
+
+    <!-- Image toolbar -->
+    <div class="image-toolbar">
+      <span class="panel-label">Annotate:</span>
+      <button class="tool-btn active" id="toolPin" onclick="setTool('pin')">📍 Pin</button>
+      <button class="tool-btn" id="toolRegion" onclick="setTool('region')">⬜ Region</button>
+      <div class="tool-sep"></div>
+      <span class="ann-count-badge" id="annCountBadge">0 annotations</span>
+      <button class="bake-btn" id="bakeBtn" onclick="bakeIteration()" disabled>⊕ Bake Iteration</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Annotations + Memory -->
+  <div class="right-panel">
+    <div class="panel-header">
+      <div class="panel-label">Annotations</div>
+      <span style="font-size:10px; color:var(--muted)">Click image to add</span>
+    </div>
+
+    <!-- Text annotation add form -->
+    <div class="add-form">
+      <div class="add-row">
+        <input type="text" id="addText" placeholder="Or type an annotation here…" onkeydown="if(event.key==='Enter') addTextAnnotation()" />
+        <button class="add-ann-btn" onclick="addTextAnnotation()">+ Add</button>
+      </div>
+      <div class="add-row">
+        <select id="addCat">
+          <option value="composition">🔲 Composition</option>
+          <option value="lighting">💡 Lighting</option>
+          <option value="color">🎨 Color</option>
+          <option value="detail">🔍 Detail</option>
+          <option value="mood">🌡 Mood</option>
+          <option value="texture">🪨 Texture</option>
+        </select>
+        <select id="addPrio">
+          <option value="critical">🔴 Critical</option>
+          <option value="nice">🔵 Nice</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <span class="chip active" data-f="all"         onclick="setFilter('all')">All</span>
+      <span class="chip"        data-f="critical"    onclick="setFilter('critical')">Critical</span>
+      <span class="chip"        data-f="composition" onclick="setFilter('composition')">Comp</span>
+      <span class="chip"        data-f="lighting"    onclick="setFilter('lighting')">Light</span>
+      <span class="chip"        data-f="color"       onclick="setFilter('color')">Color</span>
+      <span class="chip"        data-f="detail"      onclick="setFilter('detail')">Detail</span>
+      <span class="chip"        data-f="mood"        onclick="setFilter('mood')">Mood</span>
+    </div>
+
+    <!-- Annotations list -->
+    <div class="ann-list">
+      <div class="ann-inner" id="annList">
+        <div class="no-ann">No annotations yet.<br>Click or draw on the image,<br>or type one above.</div>
+      </div>
+    </div>
+
+    <!-- Skill memory -->
+    <div class="memory-section">
+      <div class="panel-header">
+        <div class="panel-label">Skill Memory</div>
+        <span style="font-size:10px; color:var(--muted)">Click to reuse</span>
+      </div>
+      <div class="memory-inner" id="memoryList">
+        <div class="no-memory">No patterns yet. Annotations you repeat will appear here.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM: Refined prompt -->
+<div class="bottom-bar">
+  <div class="bottom-header">
+    <div class="panel-label">Refined Nano Banana Prompt</div>
+    <div class="prompt-stats"><b id="incCount">0</b> included · <b id="critCount">0</b> critical</div>
+  </div>
+  <div class="bottom-row">
+    <div id="refinedPrompt"><span class="refined-placeholder">Generate an image and add annotations — your refined prompt appears here.</span></div>
+    <button class="copy-btn" onclick="copyRefined()">Copy</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const SERVER = 'http://localhost:3333';
+const CAT = {
+  composition: { label: 'Composition', color: '#a78bfa' },
+  lighting:    { label: 'Lighting',    color: '#fbbf24' },
+  color:       { label: 'Color',       color: '#60a5fa' },
+  detail:      { label: 'Detail',      color: '#34d399' },
+  mood:        { label: 'Mood',        color: '#f472b6' },
+  texture:     { label: 'Texture',     color: '#22d3ee' }
+};
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let state = {
+  annotations: [],   // { id, num, type:'text'|'pin'|'region', x,y,w,h, text, cat, prio, included }
+  iterations: [],
+  version: 1,
+  filter: 'all',
+  tool: 'pin',       // 'pin' | 'region'
+  nextId: 1,
+  currentImage: null,
+  serverOnline: false
+};
+
+// Canvas drawing state
+let isDrawing = false, drawStartX = 0, drawStartY = 0;
+let pendingAnnotation = null;  // being built before popup confirmed
+let highlightedId = null;
+
+const canvas = document.getElementById('annotationCanvas');
+const ctx = canvas.getContext('2d');
+const img = document.getElementById('generatedImage');
+const popup = document.getElementById('annPopup');
+const loadingOverlay = document.getElementById('loadingOverlay');
+
+// ══════════════════════════════════════════
+// SERVER HEALTH CHECK
+// ══════════════════════════════════════════
+function checkServer() {
+  fetch(`${SERVER}/health`, { signal: AbortSignal.timeout(3000) })
+    .then(r => r.json())
+    .then(() => setServerStatus(true))
+    .catch(() => setServerStatus(false));
+}
+
+function setServerStatus(online) {
+  state.serverOnline = online;
+  const badge  = document.getElementById('serverBadge');
+  const label  = document.getElementById('serverStatus');
+  const hint   = document.getElementById('serverHint');
+  const btn    = document.getElementById('serverToggleBtn');
+  badge.className = `server-badge ${online ? 'online' : 'offline'}`;
+  label.textContent = online ? 'Server online' : 'Server offline';
+  hint && (hint.style.display = online ? 'none' : 'block');
+  document.getElementById('genBtn').disabled = !document.getElementById('promptInput').value.trim() || !online;
+  if (btn) {
+    btn.textContent = online ? '⏹ Stop Server' : '▶ Start Server';
+    btn.style.color = online ? '#ef4444' : 'var(--muted)';
+    btn.style.borderColor = online ? 'rgba(239,68,68,.4)' : 'var(--border)';
+  }
+}
+
+async function toggleServer() {
+  if (state.serverOnline) {
+    // Stop it
+    try {
+      await fetch(`${SERVER}/stop`, { method: 'POST' });
+    } catch {}
+    setServerStatus(false);
+  } else {
+    // Can't start from browser — copy command to clipboard
+    const cmd = 'node ~/nano-banana-server.js';
+    navigator.clipboard.writeText(cmd).then(() => {
+      const btn = document.getElementById('serverToggleBtn');
+      const prev = btn.textContent;
+      btn.textContent = 'Command copied!';
+      btn.style.color = 'var(--accent)';
+      btn.style.borderColor = 'rgba(240,192,64,.4)';
+      setTimeout(() => setServerStatus(false), 2000);
+    });
+  }
+}
+
+checkServer();
+setInterval(checkServer, 5000);
+
+// Load skill memory from server
+fetch(`${SERVER}/memory`).then(r => r.json()).then(data => {
+  skillMemory = data;
+  renderMemory();
+}).catch(() => {});
+
+// ══════════════════════════════════════════
+// SKILL MEMORY (localStorage + server)
+// ══════════════════════════════════════════
+let skillMemory = JSON.parse(localStorage.getItem('nbSkillMemory') || '{"patterns":[],"sessions":0}');
+
+function trackAnnotation(ann) {
+  const existing = skillMemory.patterns.find(p =>
+    p.cat === ann.cat && p.text.toLowerCase() === ann.text.toLowerCase()
+  );
+  if (existing) {
+    existing.count++;
+    existing.lastUsed = Date.now();
+  } else {
+    skillMemory.patterns.push({ cat: ann.cat, prio: ann.prio, text: ann.text, count: 1, lastUsed: Date.now() });
+  }
+  skillMemory.patterns.sort((a, b) => b.count - a.count);
+  localStorage.setItem('nbSkillMemory', JSON.stringify(skillMemory));
+  // Persist to server/file
+  fetch(`${SERVER}/memory`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(skillMemory) }).catch(() => {});
+  renderMemory();
+}
+
+function renderMemory() {
+  const el = document.getElementById('memoryList');
+  const top = skillMemory.patterns.filter(p => p.count >= 2).slice(0, 8);
+  if (top.length === 0) {
+    el.innerHTML = '<div class="no-memory">No patterns yet. Annotations you repeat will appear here.</div>';
+    return;
+  }
+  el.innerHTML = top.map(p => `
+    <div class="memory-item" onclick="reuseMemory(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+      <div class="memory-dot" style="background:${CAT[p.cat]?.color || '#888'}"></div>
+      <div class="memory-text">${esc(p.text)}</div>
+      <div class="memory-count">×${p.count}</div>
+    </div>
+  `).join('');
+}
+
+function reuseMemory(p) {
+  document.getElementById('addText').value = p.text;
+  document.getElementById('addCat').value = p.cat;
+  document.getElementById('addPrio').value = p.prio;
+  document.getElementById('addText').focus();
+}
+
+// ══════════════════════════════════════════
+// PROMPT INPUT
+// ══════════════════════════════════════════
+function onPromptChange() {
+  const val = document.getElementById('promptInput').value;
+  document.getElementById('charCount').textContent = `${val.length} chars · ${val.trim() ? val.trim().split(/\s+/).length : 0} words`;
+  document.getElementById('genBtn').disabled = !val.trim() || !state.serverOnline;
+  updateRefinedPrompt();
+}
+
+// ══════════════════════════════════════════
+// GENERATE
+// ══════════════════════════════════════════
+async function generateImage() {
+  const prompt = document.getElementById('refinedPrompt').textContent.trim();
+  const base = document.getElementById('promptInput').value.trim();
+  const toSend = (prompt && !document.getElementById('refinedPrompt').querySelector('.refined-placeholder')) ? prompt : base;
+  if (!toSend) return;
+
+  // Show loading
+  loadingOverlay.style.display = 'flex';
+  document.getElementById('genBtn').classList.add('loading');
+  document.getElementById('genBtn').disabled = true;
+
+  try {
+    const res = await fetch(`${SERVER}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: toSend })
+    });
+    const data = await res.json();
+    if (data.success && data.image) {
+      state.currentImage = data.image;
+      state.annotations = [];
+      document.getElementById('placeholder').style.display = 'none';
+      img.onload = () => {
+        img.style.display = 'block';
+        requestAnimationFrame(() => { requestAnimationFrame(setupCanvas); });
+        document.getElementById('bakeBtn').disabled = false;
+      };
+      img.src = data.image;
+      renderAnnotations();
+    } else {
+      alert('Generation failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch (e) {
+    alert('Server error: ' + e.message);
+  } finally {
+    loadingOverlay.style.display = 'none';
+    document.getElementById('genBtn').classList.remove('loading');
+    document.getElementById('genBtn').disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════
+// IMAGE LOAD → SETUP CANVAS
+// ══════════════════════════════════════════
+function onImageLoad() {
+  // Use rAF to ensure the browser has finished layout before reading dimensions
+  requestAnimationFrame(() => {
+    setupCanvas();
+    document.getElementById('bakeBtn').disabled = false;
+  });
+}
+
+function getImageBounds() {
+  // Read the actual rendered position directly from the DOM — reliable regardless of flex layout
+  const imgRect  = img.getBoundingClientRect();
+  const wrapRect = document.getElementById('imageWrap').getBoundingClientRect();
+  return {
+    x: imgRect.left - wrapRect.left,
+    y: imgRect.top  - wrapRect.top,
+    w: imgRect.width,
+    h: imgRect.height
+  };
+}
+
+function setupCanvas() {
+  if (img.style.display === 'none' || !img.naturalWidth) return;
+  const b = getImageBounds();
+  if (b.w < 1 || b.h < 1) return; // not yet laid out
+  canvas.width  = Math.round(b.w);
+  canvas.height = Math.round(b.h);
+  canvas.style.width  = b.w + 'px';
+  canvas.style.height = b.h + 'px';
+  canvas.style.left   = b.x + 'px';
+  canvas.style.top    = b.y + 'px';
+  canvas.style.display = 'block';
+  renderCanvas();
+}
+
+window.addEventListener('resize', () => { if (img.style.display !== 'none') setupCanvas(); });
+
+// ══════════════════════════════════════════
+// CANVAS INTERACTION
+// ══════════════════════════════════════════
+canvas.addEventListener('mousedown', e => {
+  if (popup.style.display === 'block') return;
+  const r = canvas.getBoundingClientRect();
+  drawStartX = e.clientX - r.left;
+  drawStartY = e.clientY - r.top;
+  isDrawing = true;
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (!isDrawing) return;
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  renderCanvas();
+  // Rubber band
+  const dx = x - drawStartX, dy = y - drawStartY;
+  ctx.strokeStyle = 'rgba(240,192,64,0.8)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.strokeRect(drawStartX, drawStartY, dx, dy);
+  ctx.setLineDash([]);
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (!isDrawing) return;
+  isDrawing = false;
+  const r = canvas.getBoundingClientRect();
+  const endX = e.clientX - r.left, endY = e.clientY - r.top;
+  const dx = Math.abs(endX - drawStartX), dy = Math.abs(endY - drawStartY);
+
+  if (dx < 8 && dy < 8) {
+    // PIN
+    pendingAnnotation = { type: 'pin', x: drawStartX, y: drawStartY };
+  } else {
+    // REGION
+    pendingAnnotation = {
+      type: 'region',
+      x: Math.min(drawStartX, endX), y: Math.min(drawStartY, endY),
+      w: dx, h: dy
+    };
+  }
+  renderCanvas();
+  showPopupAt(pendingAnnotation);
+});
+
+// ══════════════════════════════════════════
+// ANNOTATION POPUP
+// ══════════════════════════════════════════
+function showPopupAt(ann) {
+  // Use canvas viewport rect since popup is position:fixed
+  const canvasRect = canvas.getBoundingClientRect();
+  const PW = 248, PH = 148;
+
+  let px = canvasRect.left + (ann.x || 0) + 14;
+  let py = canvasRect.top  + (ann.y || 0) + 14;
+
+  // Clamp to viewport
+  if (px + PW > window.innerWidth)  px = canvasRect.left + (ann.x || 0) - PW - 14;
+  if (py + PH > window.innerHeight) py = canvasRect.top  + (ann.y || 0) - PH - 14;
+  px = Math.max(8, px);
+  py = Math.max(8, py);
+
+  popup.style.left = px + 'px';
+  popup.style.top  = py + 'px';
+  popup.style.display = 'block';
+  document.getElementById('popupText').value = '';
+  document.getElementById('popupText').focus();
+}
+
+function confirmAnnotation() {
+  const text = document.getElementById('popupText').value.trim();
+  if (!text) { document.getElementById('popupText').focus(); return; }
+  const cat  = document.getElementById('popupCat').value;
+  const prio = document.getElementById('popupPrio').value;
+  addAnnotation({ ...pendingAnnotation, text, cat, prio });
+  popup.style.display = 'none';
+  pendingAnnotation = null;
+}
+
+function cancelAnnotation() {
+  popup.style.display = 'none';
+  pendingAnnotation = null;
+  renderCanvas();
+}
+
+document.getElementById('popupText').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmAnnotation(); }
+  if (e.key === 'Escape') cancelAnnotation();
+});
+
+// ══════════════════════════════════════════
+// ADD ANNOTATION (text form, no canvas pos)
+// ══════════════════════════════════════════
+function addTextAnnotation() {
+  const text = document.getElementById('addText').value.trim();
+  if (!text) { document.getElementById('addText').focus(); return; }
+  const cat  = document.getElementById('addCat').value;
+  const prio = document.getElementById('addPrio').value;
+  addAnnotation({ type: 'text', text, cat, prio });
+  document.getElementById('addText').value = '';
+}
+
+function addAnnotation(partial) {
+  const ann = {
+    id: state.nextId++,
+    num: state.annotations.length + 1,
+    type: partial.type || 'text',
+    x: partial.x, y: partial.y, w: partial.w, h: partial.h,
+    text: partial.text,
+    cat: partial.cat,
+    prio: partial.prio,
+    included: true
+  };
+  state.annotations.push(ann);
+  renumberAnnotations();
+  trackAnnotation(ann);
+  renderAnnotations();
+  renderCanvas();
+  updateRefinedPrompt();
+  updateCountBadge();
+}
+
+function renumberAnnotations() {
+  state.annotations.forEach((a, i) => a.num = i + 1);
+}
+
+function toggleAnn(id) {
+  const a = state.annotations.find(x => x.id === id);
+  if (a) { a.included = !a.included; renderAnnotations(); updateRefinedPrompt(); }
+}
+
+function deleteAnn(id) {
+  state.annotations = state.annotations.filter(x => x.id !== id);
+  renumberAnnotations();
+  renderAnnotations();
+  renderCanvas();
+  updateRefinedPrompt();
+  updateCountBadge();
+}
+
+function setFilter(f) {
+  state.filter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.f === f));
+  renderAnnotations();
+}
+
+function updateCountBadge() {
+  document.getElementById('annCountBadge').textContent = `${state.annotations.length} annotation${state.annotations.length !== 1 ? 's' : ''}`;
+}
+
+// ══════════════════════════════════════════
+// RENDER ANNOTATIONS PANEL
+// ══════════════════════════════════════════
+function renderAnnotations() {
+  const el = document.getElementById('annList');
+  const f  = state.filter;
+  const filtered = state.annotations.filter(a => {
+    if (f === 'all') return true;
+    if (f === 'critical') return a.prio === 'critical';
+    return a.cat === f;
+  });
+
+  if (filtered.length === 0) {
+    el.innerHTML = state.annotations.length === 0
+      ? '<div class="no-ann">No annotations yet.<br>Click or draw on the image,<br>or type one above.</div>'
+      : '<div class="no-ann">No annotations match this filter.</div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(a => {
+    const c = CAT[a.cat];
+    const typeLabel = a.type === 'pin' ? '📍' : a.type === 'region' ? '⬜' : '✏️';
+    return `
+      <div class="ann-card ${a.included ? '' : 'excluded'}"
+           id="card-${a.id}"
+           onmouseenter="highlightAnn(${a.id})"
+           onmouseleave="unhighlightAnn()">
+        <div class="card-top">
+          <div class="ann-num" style="background:${c.color}">${a.num}</div>
+          <span class="cat-label" style="color:${c.color}">${c.label}</span>
+          <span class="type-badge">${typeLabel}</span>
+          <span class="prio-badge ${a.prio === 'critical' ? 'prio-critical' : 'prio-nice'}">
+            ${a.prio === 'critical' ? '● Critical' : '○ Nice'}
+          </span>
+          <div class="card-spacer"></div>
+          <div class="toggle-wrap" onclick="toggleAnn(${a.id})">
+            <div class="toggle-track ${a.included ? 'on' : ''}">
+              <div class="toggle-thumb"></div>
+            </div>
+          </div>
+          <div class="del-btn" onclick="deleteAnn(${a.id})">✕</div>
+        </div>
+        <div class="card-text">${esc(a.text)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function highlightAnn(id) {
+  highlightedId = id;
+  document.querySelectorAll('.ann-card').forEach(c => c.classList.remove('highlighted'));
+  const card = document.getElementById(`card-${id}`);
+  if (card) card.classList.add('highlighted');
+  renderCanvas(id);
+}
+
+function unhighlightAnn() {
+  highlightedId = null;
+  document.querySelectorAll('.ann-card').forEach(c => c.classList.remove('highlighted'));
+  renderCanvas(null);
+}
+
+// ══════════════════════════════════════════
+// CANVAS DRAWING
+// ══════════════════════════════════════════
+function renderCanvas(highlightId = null) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const visible = highlightId !== null
+    ? state.annotations.filter(a => a.id === highlightId)
+    : [];
+
+  for (const a of visible) {
+    const c = CAT[a.cat]?.color || '#f0c040';
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = c;
+
+    if (a.type === 'pin') {
+      // Glow
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 20, 0, Math.PI * 2);
+      ctx.fillStyle = c + '22';
+      ctx.fill();
+      // Circle
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = c + '88';
+      ctx.fill();
+      ctx.stroke();
+      // Number
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(a.num, a.x, a.y);
+
+    } else if (a.type === 'region') {
+      // Fill
+      ctx.fillStyle = c + '18';
+      ctx.fillRect(a.x, a.y, a.w, a.h);
+      // Border
+      ctx.setLineDash([5, 3]);
+      ctx.strokeRect(a.x, a.y, a.w, a.h);
+      ctx.setLineDash([]);
+      // Number badge
+      const bx = a.x + 4, by = a.y + 4;
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, 20, 16, 3);
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(a.num, bx + 10, by + 8);
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+// TOOL SELECTION
+// ══════════════════════════════════════════
+function setTool(t) {
+  state.tool = t;
+  document.getElementById('toolPin').classList.toggle('active', t === 'pin');
+  document.getElementById('toolRegion').classList.toggle('active', t === 'region');
+}
+
+// ══════════════════════════════════════════
+// REFINED PROMPT
+// ══════════════════════════════════════════
+function updateRefinedPrompt() {
+  const base = document.getElementById('promptInput').value.trim();
+  const included = state.annotations.filter(a => a.included);
+  const critical = included.filter(a => a.prio === 'critical');
+  const nice     = included.filter(a => a.prio === 'nice');
+
+  document.getElementById('incCount').textContent  = included.length;
+  document.getElementById('critCount').textContent = critical.length;
+
+  const el = document.getElementById('refinedPrompt');
+  if (!base && included.length === 0) {
+    el.innerHTML = '<span class="refined-placeholder">Generate an image and add annotations — your refined prompt appears here.</span>';
+    return;
+  }
+
+  let parts = [];
+  if (base) parts.push(base);
+
+  if (critical.length > 0) {
+    const grouped = groupByCat(critical);
+    parts.push('Critical refinements: ' + grouped.join('; ') + '.');
+  }
+  if (nice.length > 0) {
+    const grouped = groupByCat(nice);
+    parts.push('If possible, also: ' + grouped.join('; ') + '.');
+  }
+
+  el.textContent = parts.join(' ');
+}
+
+function groupByCat(anns) {
+  const g = {};
+  for (const a of anns) {
+    const label = CAT[a.cat]?.label.toLowerCase() || a.cat;
+    const note = a.type !== 'text' ? ` [${posLabel(a)}]` : '';
+    if (!g[label]) g[label] = [];
+    g[label].push(a.text + note);
+  }
+  return Object.entries(g).map(([cat, items]) =>
+    items.length === 1 ? `${cat}: ${items[0]}` : `${cat}: ${items.join(', ')}`
+  );
+}
+
+function posLabel(a) {
+  if (a.type === 'pin' && a.x !== undefined) {
+    const xPos = a.x / canvas.width  < .33 ? 'left' : a.x / canvas.width  < .67 ? 'center' : 'right';
+    const yPos = a.y / canvas.height < .33 ? 'upper' : a.y / canvas.height < .67 ? 'middle' : 'lower';
+    return `${yPos}-${xPos}`;
+  }
+  if (a.type === 'region') return 'selected region';
+  return '';
+}
+
+function copyRefined() {
+  const el = document.getElementById('refinedPrompt');
+  if (el.querySelector('.refined-placeholder')) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    const prev = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = prev, 1400);
+  });
+}
+
+// ══════════════════════════════════════════
+// BAKE ITERATION
+// ══════════════════════════════════════════
+function bakeIteration() {
+  const base = document.getElementById('promptInput').value.trim();
+  if (!base) return;
+  const refined = document.getElementById('refinedPrompt').textContent;
+  const iter = {
+    version: state.version,
+    basePrompt: base,
+    prompt: refined || base,
+    image: state.currentImage,
+    annotations: state.annotations.filter(a => a.included).map(a => ({ ...a })),
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+  state.iterations.unshift(iter);
+  state.version++;
+  document.getElementById('versionBadge').textContent = `v${state.version}`;
+  // Update prompt to refined, clear annotations
+  document.getElementById('promptInput').value = iter.prompt;
+  state.annotations = [];
+  renumberAnnotations();
+  renderAnnotations();
+  renderCanvas();
+  renderHistory();
+  onPromptChange();
+  updateCountBadge();
+}
+
+// ══════════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════════
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (state.iterations.length === 0) {
+    el.innerHTML = '<div class="history-empty">No iterations yet. Generate → annotate → bake.</div>';
+    return;
+  }
+  el.innerHTML = state.iterations.map((it, i) => {
+    const cats = [...new Set(it.annotations.map(a => a.cat))];
+    const tags = cats.map(c => `<span class="iter-tag" style="background:${CAT[c]?.color}22;color:${CAT[c]?.color};border:1px solid ${CAT[c]?.color}44">${CAT[c]?.label}</span>`).join('');
+    const crit = it.annotations.filter(a => a.prio === 'critical').length;
+    return `
+      <div class="iter-item ${i === 0 ? 'active' : ''}" onclick="restoreIteration(${it.version})">
+        <div class="iter-v">v${it.version}</div>
+        <div class="iter-body">
+          <div class="iter-prompt">${esc(it.prompt)}</div>
+          <div class="iter-meta">
+            <span style="color:var(--muted)">${it.time}</span>
+            ${crit ? `<span style="color:#ef4444">● ${crit} critical</span>` : ''}
+            ${tags}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function restoreIteration(version) {
+  const it = state.iterations.find(x => x.version === version);
+  if (!it) return;
+  document.getElementById('promptInput').value = it.basePrompt;
+  state.annotations = it.annotations.map(a => ({ ...a }));
+  state.version = it.version;
+  document.getElementById('versionBadge').textContent = `v${it.version}`;
+  if (it.image) {
+    img.src = it.image;
+    img.style.display = 'block';
+    document.getElementById('placeholder').style.display = 'none';
+  }
+  renumberAnnotations();
+  renderAnnotations();
+  renderCanvas();
+  renderHistory();
+  onPromptChange();
+  updateCountBadge();
+}
+
+// ══════════════════════════════════════════
+// PRESETS
+// ══════════════════════════════════════════
+const PRESETS = {
+  portrait: {
+    prompt: 'Clean editorial photograph of a person in a fitted black suit seated on a minimal chrome chair, holding a large flat poster that fully covers their face, centered against a smooth warm off-white background (#F5F0E8). Poster is filled with bold orange-red (#E06E14) with large, bold clean sans-serif typography in deep navy (#1A1A2E) reading "EVERY FACE TELLS A STORY." Slight paper curl at poster edges for realism. Soft diffused studio lighting. Slight off-center rule-of-thirds framing. Warm and contemplative mood. Portrait 4:5. Photorealistic, minimal, bold editorial aesthetic.',
+    anns: [
+      { type:'text', cat:'lighting',    prio:'critical', text:'Soft catchlight visible in both eyes above the poster' },
+      { type:'text', cat:'detail',      prio:'critical', text:'Paper curl at poster corners — subtle, realistic' },
+      { type:'text', cat:'color',       prio:'nice',     text:'Orange-red poster should feel warm, not neon' },
+      { type:'text', cat:'composition', prio:'nice',     text:'Slight off-center — rule of thirds framing' }
+    ]
+  },
+  landscape: {
+    prompt: 'Epic mountain landscape at golden hour, snow-capped peaks, foreground meadow with wildflowers, dramatic clouds, cinematic wide shot, ultra-detailed, 4K, National Geographic style',
+    anns: [
+      { type:'text', cat:'lighting',    prio:'critical', text:'Sun low on horizon — long warm shadows across peaks' },
+      { type:'text', cat:'color',       prio:'critical', text:'Warmer orange/gold sky — reduce the blue cast' },
+      { type:'text', cat:'composition', prio:'nice',     text:'Add winding mountain path as a leading line' },
+      { type:'text', cat:'detail',      prio:'nice',     text:'Individual wildflowers identifiable in foreground' }
+    ]
+  },
+  product: {
+    prompt: 'Minimalist product photography of a glass perfume bottle, pure white studio background, professional three-point lighting, reflections on glossy surface, high-end commercial photography, 8K sharp detail',
+    anns: [
+      { type:'text', cat:'lighting',    prio:'critical', text:'Three-point lighting — avoid harsh single-source reflections' },
+      { type:'text', cat:'color',       prio:'critical', text:'Pure white background, not cream or grey' },
+      { type:'text', cat:'detail',      prio:'critical', text:'Glass transparency and liquid refraction must be photorealistic' },
+      { type:'text', cat:'texture',     prio:'nice',     text:'Fine condensation droplets on glass surface' }
+    ]
+  },
+  abstract: {
+    prompt: 'Abstract digital art, flowing liquid marble textures, deep navy and gold color palette, geometric shapes emerging from chaos, high contrast, contemporary fine art style, museum quality',
+    anns: [
+      { type:'text', cat:'color',       prio:'critical', text:'Gold should be metallic and shimmering — not flat yellow' },
+      { type:'text', cat:'composition', prio:'critical', text:'Strong focal point upper-left third, not centered' },
+      { type:'text', cat:'texture',     prio:'nice',     text:'Marble veining with micro-detail when zoomed in' },
+      { type:'text', cat:'mood',        prio:'nice',     text:'Luxurious and mysterious — not chaotic or aggressive' }
+    ]
+  }
+};
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  document.getElementById('promptInput').value = p.prompt;
+  state.annotations = p.anns.map((a, i) => ({ ...a, id: state.nextId++, num: i + 1, included: true }));
+  state.version = 1;
+  state.iterations = [];
+  document.getElementById('versionBadge').textContent = 'v1';
+  renderAnnotations();
+  renderCanvas();
+  renderHistory();
+  onPromptChange();
+  updateCountBadge();
+}
+
+function clearAll() {
+  document.getElementById('promptInput').value = '';
+  state.annotations = [];
+  state.iterations = [];
+  state.version = 1;
+  document.getElementById('versionBadge').textContent = 'v1';
+  renderAnnotations();
+  renderCanvas();
+  renderHistory();
+  onPromptChange();
+  updateCountBadge();
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadPreset('portrait');
+updateCountBadge();
+</script>
+</body>
+</html>
